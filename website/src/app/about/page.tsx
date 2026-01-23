@@ -35,6 +35,11 @@ export default function AboutPage() {
   const [searchInput, setSearchInput] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
 
+  // modal + custom color
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customColorName, setCustomColorName] = useState("");
+  const [customColorValue, setCustomColorValue] = useState("#3b82f6");
+
   /* =======================
      Layout config
   ======================= */
@@ -49,14 +54,23 @@ export default function AboutPage() {
      Logic
   ======================= */
 
-  const getRandomColor = (): Color =>
-    COLOR_DB[Math.floor(Math.random() * COLOR_DB.length)];
+  const handleCreateCustomBox = () => {
+    if (!customColorName.trim()) return;
 
-  const handleAddBox = () => {
     setBoxes((prev) => [
-      { id: Date.now(), color: getRandomColor() },
+      {
+        id: Date.now(),
+        color: {
+          name: customColorName.toLowerCase(),
+          value: customColorValue,
+        },
+      },
       ...prev,
     ]);
+
+    setCustomColorName("");
+    setCustomColorValue("#3b82f6");
+    setIsModalOpen(false);
   };
 
   const handleSearch = () => {
@@ -70,12 +84,10 @@ export default function AboutPage() {
   };
 
   /* =======================
-     Filter from "DB"
+     Filter
   ======================= */
   const filteredBoxes = boxes.filter((box) =>
-    activeFilter === ""
-      ? true
-      : box.color.name.includes(activeFilter)
+    activeFilter === "" ? true : box.color.name.includes(activeFilter)
   );
 
   /* =======================
@@ -89,10 +101,10 @@ export default function AboutPage() {
 
       {/* สร้างกล่อง */}
       <button
-        onClick={handleAddBox}
+        onClick={() => setIsModalOpen(true)}
         className="rounded-full bg-black px-6 py-3 text-white hover:bg-zinc-800 dark:bg-white dark:text-black"
       >
-        สร้างแผ่นสี่เหลี่ยม (สุ่มสี)
+        สร้างแผ่นสี่เหลี่ยม
       </button>
 
       {/* ค้นหา */}
@@ -148,6 +160,61 @@ export default function AboutPage() {
           })}
         </div>
       </div>
+
+      {/* =======================
+          Modal
+      ======================= */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-[360px] rounded-xl bg-white p-6 shadow-lg dark:bg-zinc-900">
+            <h2 className="mb-4 text-xl font-bold text-zinc-900 dark:text-white">
+              สร้างสีใหม่
+            </h2>
+
+            {/* ชื่อสี */}
+            <label className="mb-1 block text-sm text-zinc-600 dark:text-zinc-300">
+              ชื่อสี
+            </label>
+            <input
+              type="text"
+              placeholder="เช่น blue, mint"
+              value={customColorName}
+              onChange={(e) => setCustomColorName(e.target.value)}
+              className="mb-4 w-full rounded border px-3 py-2 text-sm
+                         focus:outline-none focus:ring focus:ring-blue-300
+                         dark:bg-zinc-800 dark:text-white"
+            />
+
+            {/* เลือกสี */}
+            <label className="mb-1 block text-sm text-zinc-600 dark:text-zinc-300">
+              เลือกสี
+            </label>
+            <input
+              type="color"
+              value={customColorValue}
+              onChange={(e) => setCustomColorValue(e.target.value)}
+              className="mb-6 h-12 w-full cursor-pointer"
+            />
+
+            {/* ปุ่ม */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="rounded px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                onClick={handleCreateCustomBox}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-500"
+              >
+                ตกลง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
