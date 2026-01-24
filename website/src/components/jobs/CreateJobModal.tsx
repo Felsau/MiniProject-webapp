@@ -3,7 +3,9 @@
 type Props = {
   isOpen: boolean;
   jobTitle: string;
+  salary: string;
   onChangeTitle: (value: string) => void;
+  onChangeSalary: (value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
 };
@@ -11,7 +13,9 @@ type Props = {
 export default function CreateJobModal({
   isOpen,
   jobTitle,
+  salary,
   onChangeTitle,
+  onChangeSalary,
   onClose,
   onSubmit,
 }: Props) {
@@ -24,6 +28,7 @@ export default function CreateJobModal({
           เพิ่มตำแหน่งงาน
         </h2>
 
+        {/* ชื่อตำแหน่งงาน */}
         <label className="mb-1 block text-sm text-zinc-600 dark:text-zinc-300">
           ชื่อตำแหน่งงาน
         </label>
@@ -32,6 +37,20 @@ export default function CreateJobModal({
           placeholder="เช่น Frontend Developer"
           value={jobTitle}
           onChange={(e) => onChangeTitle(e.target.value)}
+          className="mb-4 w-full rounded border px-3 py-2 text-sm
+                     focus:outline-none focus:ring focus:ring-blue-300
+                     dark:bg-zinc-800 dark:text-white"
+        />
+
+        {/* เงินเดือน */}
+        <label className="mb-1 block text-sm text-zinc-600 dark:text-zinc-300">
+          เงินเดือน
+        </label>
+        <input
+          type="text"
+          placeholder="30,000 - 50,000 บาท"
+          value={salary}
+          onChange={(e) => onChangeSalary(e.target.value)}
           className="mb-6 w-full rounded border px-3 py-2 text-sm
                      focus:outline-none focus:ring focus:ring-blue-300
                      dark:bg-zinc-800 dark:text-white"

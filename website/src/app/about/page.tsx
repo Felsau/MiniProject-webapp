@@ -6,35 +6,28 @@ import CreateJobModal from "@/components/jobs/CreateJobModal";
 import { Job } from "@/components/jobs/types";
 
 export default function AboutPage() {
-  /* =======================
-     State
-  ======================= */
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jobTitle, setJobTitle] = useState("");
+  const [salary, setSalary] = useState("");
 
-  /* =======================
-     Logic
-  ======================= */
   const handleCreateJob = () => {
-    if (!jobTitle.trim()) return;
-
+    if (!jobTitle.trim() || !salary.trim()) return;
 
     setJobs((prev) => [
       {
         id: Date.now(),
         title: jobTitle,
+        salary: salary,
       },
       ...prev,
     ]);
 
     setJobTitle("");
+    setSalary("");
     setIsModalOpen(false);
   };
 
-  /* =======================
-     Render
-  ======================= */
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black
                     flex flex-col items-center justify-center gap-6">
@@ -55,7 +48,9 @@ export default function AboutPage() {
       <CreateJobModal
         isOpen={isModalOpen}
         jobTitle={jobTitle}
+        salary={salary}
         onChangeTitle={setJobTitle}
+        onChangeSalary={setSalary}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateJob}
       />

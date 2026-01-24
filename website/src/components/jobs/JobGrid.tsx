@@ -7,9 +7,6 @@ type Props = {
 };
 
 export default function JobGrid({ jobs }: Props) {
-  /* =======================
-     Layout config
-  ======================= */
   const BOX_SIZE = 120;
   const GAP = 16;
   const STEP = BOX_SIZE + GAP;
@@ -38,13 +35,16 @@ export default function JobGrid({ jobs }: Props) {
               className="absolute h-[120px] w-[120px] rounded-md
                          bg-blue-600 text-white
                          transition-transform duration-500 ease-in-out
-                         flex items-center justify-center text-sm font-semibold
+                         flex flex-col items-center justify-center
                          text-center px-2"
               style={{
                 transform: `translate(${col * STEP}px, ${row * STEP}px)`,
               }}
             >
-              {job.title}
+              <div className="text-sm font-bold">{job.title}</div>
+              <div className="mt-1 text-xs text-blue-100">
+                {job.salary}
+              </div>
             </div>
           );
         })}
