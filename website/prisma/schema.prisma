@@ -1,23 +1,34 @@
-// src/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  // ใส่บรรทัดนี้กลับมา และชี้ไปที่ไฟล์ Database เดิมของคุณ
   url      = "file:./Database.db"
 }
 
-model Jobs {
-  id          Int      @id @default(autoincrement())
-  title       String?
-  salary      String?
-  description String?
-  location    String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+model departments {
+  dept_id      Int            @id @default(autoincrement())
+  dept_name    String
+  job_position job_position[]
+}
 
-  @@map("Jobs")
+model job_position {
+  job_id             Int          @id @default(autoincrement())
+  job_title          String
+  department_id      Int?
+  job_level          String?
+  work_location      String?
+  job_description    String?
+  responsibilities   String?
+  qualifications     String?
+  special_conditions String?
+  hiring_count       Int?         @default(1)
+  employment_type    String?
+  salary_min         Int?
+  salary_max         Int?
+  open_date          DateTime?
+  close_date         DateTime?
+  status             String?      @default("Open")
+  departments        departments? @relation(fields: [department_id], references: [dept_id], onDelete: NoAction, onUpdate: NoAction)
 }

@@ -1,48 +1,84 @@
-// src/actions/jobActions.ts
-
 "use server";
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-// ไม่ต้องมี adapter หรือ config อะไรทั้งนั้น แค่สร้างใหม่เลย
-const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 export async function createJobAction(data: {
-  title: string;
-  salary: string;
-  description: string;
-  location: string;
+  job_title: string;
+  department_id: number;
+  job_level?: string;
+  work_location?: string;
+  job_description?: string;
+  responsibilities?: string;
+  qualifications?: string;
+  special_conditions?: string;
+  hiring_count?: number;
+  employment_type?: string;
+  salary_min?: number;
+  salary_max?: number;
+  close_date?: string;
 }) {
   try {
-    await prisma.jobs.create({
+    if (!data.job_title) throw new Error("Job title is required");
+    if (!data.department_id) throw new Error("Department is required");
+
+    await prisma.job_position.create({
       data: {
-        title: data.title,
-        salary: data.salary,
-        description: data.description,
-        location: data.location,
+        job_title: data.job_title,
+        department_id: data.department_id,
+        job_level: data.job_level || null,
+        work_location: data.work_location || null,
+        job_description: data.job_description || null,
+        responsibilities: data.responsibilities || null,
+        qualifications: data.qualifications || null,
+        special_conditions: data.special_conditions || null,
+        hiring_count: data.hiring_count || 1,
+        employment_type: data.employment_type || null,
+        salary_min: data.salary_min || null,
+        salary_max: data.salary_max || null,
+        close_date: data.close_date ? new Date(data.close_date) : null,
+        status: "Open",
       },
     });
 
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("CREATE JOB ERROR:", error);
-    throw new Error("ไม่สามารถบันทึกข้อมูลได้");
+    console.error("Database Error:", error);
+    return { success: false, error: "Failed to create job" };
   }
 }
 
 export async function getJobsAction() {
   try {
-    return await prisma.jobs.findMany({
-      orderBy: { id: "desc" },
+    return await prisma.job_position.findMany({
+      include: {
+        departments: true,
+      },
+      orderBy: {
+        job_id: "desc",
+      },
     });
   } catch (error) {
-    console.error("GET JOBS ERROR:", error);
+    console.error("Fetch Error:", error);
+    return []; 
+  }
+}
+
+export async function getDepartmentsAction() {
+  try {
+    console.log("getDepartmentsAction called");
+    const depts = await prisma.departments.findMany({
+      orderBy: {
+        dept_name: "asc",
+      },
+    });
+    console.log("Raw departments from DB:", depts);
+    console.log("Number of departments:", depts.length);
+    return depts;
+  } catch (error) {
+    console.error("Fetch Departments Error:", error);
     return [];
   }
 }
+

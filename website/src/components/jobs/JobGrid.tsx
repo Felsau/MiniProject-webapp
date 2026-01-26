@@ -10,83 +10,74 @@ type Props = {
 export default function JobGrid({ jobs }: Props) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
-  const BOX_SIZE = 120;
-  const GAP = 16;
-  const STEP = BOX_SIZE + GAP;
-  const CONTAINER_WIDTH = 600;
-  const CONTAINER_HEIGHT = 300;
-  const COLUMNS = Math.floor(CONTAINER_WIDTH / STEP);
-
   return (
     <>
-      {/* Grid */}
-      <div
-        className="relative overflow-y-auto border border-dashed border-zinc-400 rounded-md"
-        style={{ width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }}
-      >
-        <div
-          className="relative"
-          style={{
-            height: Math.ceil(jobs.length / COLUMNS) * STEP,
-          }}
-        >
-          {jobs.map((job, index) => {
-            const col = index % COLUMNS;
-            const row = Math.floor(index / COLUMNS);
-
-            return (
-              <div
-                key={job.id}
-                onClick={() => setSelectedJob(job)}
-                className="absolute h-[120px] w-[120px]
-                           rounded-md bg-blue-600 text-white
-                           cursor-pointer transition-all
-                           hover:scale-105 hover:bg-blue-700
-                           flex flex-col items-center justify-center
-                           text-center px-2"
-                style={{
-                  transform: `translate(${col * STEP}px, ${row * STEP}px)`,
-                }}
-              >
-                <div className="text-sm font-bold line-clamp-2">
-                  {job.title}
-                </div>
-                <div className="mt-1 text-xs text-blue-100">
-                  {job.salary}
-                </div>
-                <div className="text-[10px] text-blue-200">
-                  {job.location}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-3 gap-4">
+        {jobs.map((job) => (
+          <div
+            key={job.job_id}
+            onClick={() => setSelectedJob(job)}
+            className="cursor-pointer rounded-lg p-4 hover:shadow-lg transition-shadow"
+            style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F172A' }}
+          >
+            <div className="font-bold" style={{ color: '#2563EB' }}>{job.job_title}</div>
+            <div className="text-sm" style={{ color: '#475569' }}>{job.departments?.dept_name || "N/A"}</div>
+            <div className="text-xs" style={{ color: '#64748B' }}>{job.work_location}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-[360px] rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="text-lg font-bold mb-2">
-              {selectedJob.title}
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-8" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
+          <div className="w-2xl rounded-lg p-6 shadow-xl" style={{ backgroundColor: '#F8FAFC' }}>
+            <h2 className="mb-4 text-2xl font-bold" style={{ color: '#2563EB' }}>
+              {selectedJob.job_title}
             </h2>
 
-            <p className="text-sm text-gray-700 mb-1">
-              💰 เงินเดือน: {selectedJob.salary}
-            </p>
+            <div className="mb-4 space-y-2 border-b pb-4">
+              <p><strong className="text-gray-700">แผนก:</strong> {selectedJob.departments?.dept_name || "N/A"}</p>
+              <p><strong className="text-gray-700">ระดับ:</strong> {selectedJob.job_level || "N/A"}</p>
+              <p><strong className="text-gray-700">สถานที่:</strong> {selectedJob.work_location || "N/A"}</p>
+              <p><strong className="text-gray-700">ประเภทการจ้าง:</strong> {selectedJob.employment_type || "N/A"}</p>
+              <p><strong className="text-gray-700">จำนวนที่เปิดรับ:</strong> {selectedJob.hiring_count || 1}</p>
+              {selectedJob.salary_min && selectedJob.salary_max && (
+                <p><strong className="text-gray-700">เงินเดือน:</strong> {selectedJob.salary_min.toLocaleString()} - {selectedJob.salary_max.toLocaleString()} บาท</p>
+              )}
+            </div>
 
-            <p className="text-sm text-gray-700 mb-1">
-              📍 สถานที่: {selectedJob.location}
-            </p>
+            <div className="mb-4">
+              <h3 className="mb-2 font-bold text-gray-800">เกี่ยวกับบทบาทนี้</h3>
+              <p className="text-sm text-gray-600">{selectedJob.job_description}</p>
+            </div>
 
-            <p className="mt-3 text-sm text-gray-800">
-              {selectedJob.description}
-            </p>
+            <div className="mb-4">
+              <h3 className="mb-2 font-bold text-gray-800">หน้าที่ความรับผิดชอบ</h3>
+              <p className="text-sm whitespace-pre-wrap text-gray-600">{selectedJob.responsibilities}</p>
+            </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mb-4">
+              <h3 className="mb-2 font-bold text-gray-800">คุณสมบัติผู้สมัคร</h3>
+              <p className="text-sm whitespace-pre-wrap text-gray-600">{selectedJob.qualifications}</p>
+            </div>
+
+            {selectedJob.special_conditions && (
+              <div className="mb-4">
+                <h3 className="mb-2 font-bold text-gray-800">เงื่อนไขพิเศษ</h3>
+                <p className="text-sm whitespace-pre-wrap text-gray-600">{selectedJob.special_conditions}</p>
+              </div>
+            )}
+
+            {selectedJob.close_date && (
+              <p className="mb-4 text-sm text-gray-600">
+                <strong className="text-gray-700">วันปิดรับสมัคร:</strong> {new Date(selectedJob.close_date).toLocaleDateString('th-TH')}
+              </p>
+            )}
+
+            <div className="text-right">
               <button
                 onClick={() => setSelectedJob(null)}
-                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                className="rounded px-4 py-2 text-white hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: '#38BDF8' }}
               >
                 ปิด
               </button>
