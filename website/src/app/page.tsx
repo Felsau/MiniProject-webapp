@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client"; // สำหรับใช้ useState ใน Next.js
 
 import React, { useState } from 'react';
@@ -21,14 +22,41 @@ const HRDashboardUpdated = () => {
       default: return 'text-gray-600 bg-gray-100';
     }
   };
+=======
+import Image from "next/image";
+import Link from "next/link";
+import TranslatableContent from "@/components/TranslatableContent";
+>>>>>>> 8ab9276cbb00cae8bade172711b4b7576c8b0674
 
   return (
+<<<<<<< HEAD
     <div className="p-8 bg-gray-50 min-h-screen">
       {/* --- ส่วน Header & Stats --- */}
       <header className="mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 tracking-tight">ระบบบริหารจัดการผู้สมัคร</h1>
           <p className="text-gray-500 text-sm">ภาพรวมการสรรหาบุคลากรประจำวัน</p>
+=======
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
+      <main className="text-center px-6">
+        <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-50">
+          Welcome to My Website
+        </h1>
+
+        <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
+          <code>
+            <TranslatableContent content="นี่คือหน้าหลักอย่างง่าย เริ่มแก้ไขได้ที่ page.tsx" />
+          </code>
+        </p>
+
+        <div className="mt-8">
+          <Link
+            href="/about"
+            className="inline-block rounded-full bg-black px-6 py-3 text-white transition hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            <TranslatableContent content="ไปหน้า About" />
+          </Link>
+>>>>>>> 8ab9276cbb00cae8bade172711b4b7576c8b0674
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-400">Conversion Rate (สมัคร ➔ สัมภาษณ์)</p>

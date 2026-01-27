@@ -32,3 +32,14 @@ model job_position {
   status             String?      @default("Open")
   departments        departments? @relation(fields: [department_id], references: [dept_id], onDelete: NoAction, onUpdate: NoAction)
 }
+
+model TranslationCache {
+  id               Int       @id @default(autoincrement())
+  original_thai    String    @unique
+  translated_en    String
+  source_page      String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("TranslationCache")
+}
