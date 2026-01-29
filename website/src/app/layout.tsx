@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./api/auth/[...nextauth]/route";
+import SessionProvider from "@/components/SessionProvider";
 import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
@@ -14,15 +17,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ระบบรับสมัครงาน",
-  description: "ระบบจัดการตำแหน่งงานภายในองค์กร",
+  title: "ระบบจัดหางานภายในองค์กร | Internal Job Portal",
+  description: "ระบบจัดการและสรรหาบุคลากรภายในองค์กร - Internal Recruitment Management System",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(authOptions);
+  const userRole = (session?.user as any)?.role;
+  const showSidebar = session && (userRole === "HR" || userRole === "ADMIN");
+
   return (
     <html lang="th">
       <body
@@ -31,24 +38,22 @@ export default function RootLayout({
           ${geistMono.variable}
           antialiased
           min-h-screen
-          bg-slate-100
-          text-slate-800
+          bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50
+          text-slate-900
         `}
       >
-        {/* Layout Wrapper */}
-        <div className="flex min-h-screen w-full">
-
-          {/* Sidebar */}
-          <aside className="w-64 min-h-screen bg-white border-r border-slate-200">
-            <Sidebar />
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 bg-linear-to-br from-slate-100 to-slate-200 p-8 overflow-y-auto">
-            {children}
-          </main>
-
-        </div>
+        <SessionProvider session={session}>
+          {showSidebar ? (
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="flex-1 overflow-auto">
+                <div className="min-h-screen">{children}</div>
+              </main>
+            </div>
+          ) : (
+            children
+          )}
+        </SessionProvider>
       </body>
     </html>
   );

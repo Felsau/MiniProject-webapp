@@ -1,3 +1,7 @@
+// ============================================
+// Prisma Schema - Job Recruitment System
+// ============================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,28 +11,55 @@ datasource db {
   url      = "file:./Database.db"
 }
 
-model departments {
-  dept_id      Int            @id @default(autoincrement())
-  dept_name    String
-  job_position job_position[]
+// ============================================
+// User Management (ระบบผู้ใช้งาน)
+// ============================================
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // Hashed password
+  role      String   @default("USER") // ADMIN, HR, USER
+  
+  // Personal Information
+  fullName  String?  // ชื่อ-นามสกุลจริง
+  email     String?  // อีเมลติดต่อ
+  phone     String?  // เบอร์โทร
+  position  String?  // ตำแหน่งงานปัจจุบัน
+  bio       String?  // แนะนำตัว
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relations
+  jobs      Job[]    // งานที่สร้าง
+
+  @@map("User")
 }
 
-model job_position {
-  job_id             Int          @id @default(autoincrement())
-  job_title          String
-  department_id      Int?
-  job_level          String?
-  work_location      String?
-  job_description    String?
-  responsibilities   String?
-  qualifications     String?
-  special_conditions String?
-  hiring_count       Int?         @default(1)
-  employment_type    String?
-  salary_min         Int?
-  salary_max         Int?
-  open_date          DateTime?
-  close_date         DateTime?
-  status             String?      @default("Open")
-  departments        departments? @relation(fields: [department_id], references: [dept_id], onDelete: NoAction, onUpdate: NoAction)
+// ============================================
+// Job Posting (ระบบประกาศงาน)
+// ============================================
+
+model Job {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  department       String?
+  location         String?
+  salary           String?
+  employmentType   String   @default("FULL_TIME")
+  requirements     String?
+  responsibilities String?
+  benefits         String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  postedByUser User @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+  postedBy     Int
+
+  @@map("Job")
 }
