@@ -7,12 +7,28 @@ import { Home, Users, LayoutDashboard, LogOut, Briefcase, Building2 } from "luci
 import { signOut } from "next-auth/react";
 
 export default function Sidebar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/" });
   };
+
+  // ไม่แสดง Sidebar ในหน้า login และหน้า home
+  if (pathname === "/" || pathname === "/login") {
+    return null;
+  }
+
+  // ไม่แสดง Sidebar ถ้ายังไม่ได้ล็อกอินหรือกำลังโหลด session
+  if (status === "loading" || !session) {
+    return null;
+  }
+
+  // เช็ค role ว่าเป็น HR หรือ ADMIN เท่านั้น
+  const userRole = (session.user as any)?.role;
+  if (userRole !== "HR" && userRole !== "ADMIN") {
+    return null;
+  }
 
   const menuItems = [
     {

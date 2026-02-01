@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import SessionProvider from "@/components/SessionProvider";
 import Sidebar from "@/components/Sidebar";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +28,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const showSidebar = session && (userRole === "HR" || userRole === "ADMIN");
 
   return (
     <html lang="th">
@@ -43,16 +42,10 @@ export default async function RootLayout({
         `}
       >
         <SessionProvider session={session}>
-          {showSidebar ? (
-            <>
-              <Sidebar />
-              <main className="ml-72 min-h-screen">
-                {children}
-              </main>
-            </>
-          ) : (
-            children
-          )}
+          <Sidebar />
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
         </SessionProvider>
       </body>
     </html>

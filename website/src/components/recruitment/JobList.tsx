@@ -132,6 +132,7 @@ export default function JobList({ jobs, userRole, showInactive = false }: JobLis
     );
   }
 
+  return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredJobs.map((job) => (
@@ -202,9 +203,8 @@ export default function JobList({ jobs, userRole, showInactive = false }: JobLis
                               title="ลบถาวร"
                               disabled={loadingJobId === job.id}
                             >
-                            >
-                          <Trash2 size={16} />
-                        </button>
+                              <Trash2 size={16} />
+                            </button>
                           </>
                         )}
                     </div>
