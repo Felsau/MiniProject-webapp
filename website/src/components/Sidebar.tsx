@@ -3,15 +3,16 @@
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, LayoutDashboard, LogOut, Briefcase, Building2, Search, FileText, Bookmark, User } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { LogOut, Building2 } from "lucide-react";
+import { handleLogoutUser } from "@/utils/authHelpers";
+import { getSidebarMenuItems } from "@/utils/getSidebarMenuItems";
 
 export default function Sidebar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" });
+    await handleLogoutUser("/");
   };
 
   // ไม่แสดง Sidebar ในหน้า login และหน้า home
@@ -24,57 +25,8 @@ export default function Sidebar() {
     return null;
   }
 
-  // ตรวจสอบ role
   const userRole = (session.user as any)?.role;
-  
-  // กำหนด menu ตาม role
-  const menuItems = userRole === "USER" 
-    ? [
-        {
-          name: "ค้นหางาน",
-          icon: Search,
-          href: "/jobs",
-          description: "ค้นหาตำแหน่งงาน"
-        },
-        {
-          name: "งานที่สมัครไปแล้ว",
-          icon: FileText,
-          href: "/applications",
-          description: "ติดตามสถานะ"
-        },
-        {
-          name: "งานที่เล็งไว้",
-          icon: Bookmark,
-          href: "/bookmarks",
-          description: "งานที่บันทึกไว้"
-        },
-        {
-          name: "ข้อมูลส่วนตัว",
-          icon: User,
-          href: "/profile",
-          description: "จัดการโปรไฟล์"
-        },
-      ]
-    : [
-        {
-          name: "Dashboard",
-          icon: LayoutDashboard,
-          href: "/dashboard",
-          description: "ภาพรวมระบบ"
-        },
-        {
-          name: "จัดการตำแหน่งงาน",
-          icon: Briefcase,
-          href: "/recruitment",
-          description: "ระบบสรรหา"
-        },
-        {
-          name: "โปรไฟล์",
-          icon: Home,
-          href: "/profile",
-          description: "ข้อมูลส่วนตัว"
-        },
-      ];
+  const menuItems = getSidebarMenuItems(userRole);
 
   return (
     <div className="fixed left-0 top-0 w-72 h-screen bg-white shadow-2xl flex flex-col overflow-y-auto z-40">

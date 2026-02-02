@@ -2,25 +2,20 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { 
+  validateJobData, 
+  CreateJobData 
+} from "@/lib/jobService";
 
-export async function createJobAction(data: {
-  job_title: string;
-  department_id: number;
-  job_level?: string;
-  work_location?: string;
-  job_description?: string;
-  responsibilities?: string;
-  qualifications?: string;
-  special_conditions?: string;
-  hiring_count?: number;
-  employment_type?: string;
-  salary_min?: number;
-  salary_max?: number;
-  close_date?: string;
-}) {
+/**
+ * Create a new job position
+ */
+export async function createJobAction(data: CreateJobData) {
   try {
-    if (!data.job_title) throw new Error("Job title is required");
-    if (!data.department_id) throw new Error("Department is required");
+    const validation = await validateJobData(data);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
 
     await prisma.job_position.create({
       data: {
@@ -49,6 +44,9 @@ export async function createJobAction(data: {
   }
 }
 
+/**
+ * Get all job positions
+ */
 export async function getJobsAction() {
   try {
     return await prisma.job_position.findMany({
@@ -65,16 +63,16 @@ export async function getJobsAction() {
   }
 }
 
+/**
+ * Get all departments
+ */
 export async function getDepartmentsAction() {
   try {
-    console.log("getDepartmentsAction called");
     const depts = await prisma.departments.findMany({
       orderBy: {
         dept_name: "asc",
       },
     });
-    console.log("Raw departments from DB:", depts);
-    console.log("Number of departments:", depts.length);
     return depts;
   } catch (error) {
     console.error("Fetch Departments Error:", error);
@@ -82,10 +80,9 @@ export async function getDepartmentsAction() {
   }
 }
 
-// ============================================
-// Kill Section - Job Soft Delete Actions
-// ============================================
-
+/**
+ * Kill (soft delete) a job - mark as inactive
+ */
 export async function killJobAction(jobId: string) {
   try {
     const updatedJob = await prisma.job.update({
@@ -104,6 +101,9 @@ export async function killJobAction(jobId: string) {
   }
 }
 
+/**
+ * Restore a killed job - mark as active
+ */
 export async function restoreJobAction(jobId: string) {
   try {
     const updatedJob = await prisma.job.update({
@@ -122,6 +122,9 @@ export async function restoreJobAction(jobId: string) {
   }
 }
 
+/**
+ * Get all inactive jobs
+ */
 export async function getInactiveJobsAction() {
   try {
     return await prisma.job.findMany({

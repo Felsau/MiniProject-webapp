@@ -2,28 +2,56 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { getUserAuthStatus } from "@/lib/apiHelpers";
+import { searchAndFilterJobs, type JobFilterCriteria } from "@/lib/jobService";
 
-// ============================================
-// GET all active jobs (or all jobs if admin)
-// ============================================
+/**
+ * GET all active jobs (or all jobs if admin)
+ * Supports filtering by search, department, location, employmentType, salaryMin, salaryMax, isActive
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const includeInactive = searchParams.get("includeInactive") === "true";
     const session = await getServerSession(authOptions);
 
     // Determine if user is admin/hr
-    let isAdminOrHR = false;
-    if (session?.user?.name) {
-      const user = await prisma.user.findUnique({
-        where: { username: session.user.name as string },
-      });
-      isAdminOrHR = user?.role === "ADMIN" || user?.role === "HR";
+    const isAdminOrHR = session?.user?.name 
+      ? await getUserAuthStatus(session.user.name as string)
+      : false;
+
+    // Build filter criteria from query parameters
+    const filterCriteria: JobFilterCriteria = {
+      searchKeyword: searchParams.get("search") || undefined,
+      department: searchParams.get("department") || undefined,
+      location: searchParams.get("location") || undefined,
+      employmentType: searchParams.get("employmentType") || undefined,
+      salaryMin: searchParams.get("salaryMin") 
+        ? parseInt(searchParams.get("salaryMin")!) 
+        : undefined,
+      salaryMax: searchParams.get("salaryMax") 
+        ? parseInt(searchParams.get("salaryMax")!) 
+        : undefined,
+      isActive: searchParams.get("isActive") === "false" ? false : true,
+    };
+
+    // If admin/hr requests inactive jobs, set isActive to undefined (show all)
+    if (isAdminOrHR && searchParams.get("includeInactive") === "true") {
+      filterCriteria.isActive = undefined;
     }
 
-    // Admin/HR can see all jobs, others see only active jobs
+    // Use the filter service if any filters are provided
+    const hasFilters = Object.values(filterCriteria).some(
+      (v) => v !== undefined && v !== "" && v !== true
+    );
+
+    if (hasFilters || searchParams.get("search")) {
+      const jobs = await searchAndFilterJobs(filterCriteria);
+      return NextResponse.json(jobs, { status: 200 });
+    }
+
+    // Default: return active jobs or all jobs if admin
     const jobs = await prisma.job.findMany({
-      where: includeInactive && isAdminOrHR ? {} : { isActive: true },
+      where: isAdminOrHR ? {} : { isActive: true },
       include: {
         postedByUser: {
           select: {
@@ -47,6 +75,9 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * POST create a new job
+ */
 export async function POST(req: Request) {
   try {
     // 1. เช็คว่า Login หรือยัง?

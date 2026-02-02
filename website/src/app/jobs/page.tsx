@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, MapPin, Briefcase, DollarSign, Calendar, Filter, User, Bookmark } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Briefcase, Calendar, DollarSign, MapPin, User, Bookmark } from "lucide-react";
+import { JobFilterComponent } from "@/components/recruitment/JobFilterComponent";
+import { useJobFilter, useFilteredJobs } from "@/hooks/useJobFilter";
+import type { JobFilterCriteria } from "@/lib/jobService";
 
 interface Job {
   id: string;
@@ -23,29 +25,41 @@ interface Job {
   } | null;
 }
 
+interface FilterOptions {
+  departments: string[];
+  locations: string[];
+  employmentTypes: { value: string; label: string }[];
+}
+
 export default function JobsPage() {
-  const router = useRouter();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { jobs, loading, error, fetchJobs } = useFilteredJobs();
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    departments: [],
+    locations: [],
+    employmentTypes: [],
+  });
+  const [optionsLoading, setOptionsLoading] = useState(true);
 
+  // Load filter options on mount
   useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  const fetchJobs = async () => {
-    try {
-      const res = await fetch("/api/job");
-      if (res.ok) {
-        const data = await res.json();
-        setJobs(data);
+    const loadFilterOptions = async () => {
+      try {
+        const response = await fetch("/api/job/filter-options");
+        if (response.ok) {
+          const data = await response.json();
+          setFilterOptions(data);
+        }
+      } catch (err) {
+        console.error("Error loading filter options:", err);
+      } finally {
+        setOptionsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadFilterOptions();
+    // Load initial jobs
+    fetchJobs({});
+  }, [fetchJobs]);
 
   const getEmploymentTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
@@ -57,14 +71,12 @@ export default function JobsPage() {
     return labels[type] || type;
   };
 
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.department?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleFilterChange = (newFilters: JobFilterCriteria) => {
+    fetchJobs(newFilters);
+  };
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -72,46 +84,38 @@ export default function JobsPage() {
           <p className="text-gray-600">ค้นหาตำแหน่งงานที่เหมาะสมกับคุณ</p>
         </div>
 
-        {/* Search & Filter */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="ค้นหาตำแหน่งงาน..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition flex items-center gap-2">
-              <Filter size={20} />
-              ตัวกรอง
-            </button>
-          </div>
-        </div>
+        {/* Filter Component */}
+        {!optionsLoading && (
+          <JobFilterComponent
+            onFilterChange={handleFilterChange}
+            options={filterOptions}
+          />
+        )}
 
         {/* Jobs List */}
         {loading ? (
           <div className="text-center py-10">
             <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
           </div>
-        ) : filteredJobs.length === 0 ? (
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            {error}
+          </div>
+        ) : jobs.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-10 text-center border border-gray-200 border-dashed">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Briefcase className="text-gray-400" size={32} />
             </div>
             <p className="text-gray-500 text-lg font-medium">
-              {searchTerm ? "ไม่พบตำแหน่งงานที่ค้นหา" : "ยังไม่มีตำแหน่งงานในขณะนี้"}
+              ไม่พบตำแหน่งงานที่ค้นหา
             </p>
             <p className="text-gray-400 text-sm mt-1">
-              {searchTerm ? "ลองค้นหาด้วยคำอื่น" : "กรุณาติดตามประกาศงานใหม่ๆ ในเร็วๆ นี้"}
+              ลองค้นหาด้วยคำอื่น หรือปรับเปลี่ยนตัวกรอง
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJobs.map((job) => (
+            {jobs.map((job) => (
               <div
                 key={job.id}
                 className="group bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition"

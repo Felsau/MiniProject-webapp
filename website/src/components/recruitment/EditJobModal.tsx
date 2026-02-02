@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useJobForm, useJobApi } from "@/hooks/useJobForm";
+import { JobFormFields } from "./JobFormFields";
 
 interface Job {
   id: string;
@@ -29,8 +31,7 @@ export default function EditJobModal({
   onClose,
 }: EditJobModalProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const { formData, setAll } = useJobForm({
     title: job.title,
     description: job.description || "",
     department: job.department || "",
@@ -41,9 +42,10 @@ export default function EditJobModal({
     responsibilities: job.responsibilities || "",
     benefits: job.benefits || "",
   });
+  const { loading, submitJob } = useJobApi();
 
   useEffect(() => {
-    setFormData({
+    setAll({
       title: job.title,
       description: job.description || "",
       department: job.department || "",
@@ -54,36 +56,17 @@ export default function EditJobModal({
       responsibilities: job.responsibilities || "",
       benefits: job.benefits || "",
     });
-  }, [job]);
+  }, [job, setAll]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      const res = await fetch(`/api/job/${job.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        onClose();
-        router.refresh();
-      } else {
-        let message = "ไม่สามารถแก้ไขงานได้";
-        try {
-          const data = await res.json();
-          if (data?.error) message = data.error;
-        } catch {
-          // ignore json parse errors
-        }
-        alert(message);
-      }
-    } catch (_error) {
-      alert("เกิดข้อผิดพลาด");
-    } finally {
-      setLoading(false);
+      await submitJob(formData, "PUT", job.id);
+      onClose();
+      router.refresh();
+    } catch {
+      // Error is handled by the hook's state
     }
   };
 
@@ -103,154 +86,12 @@ export default function EditJobModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              ชื่อตำแหน่ง <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="เช่น Senior Developer"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                แผนก
-              </label>
-              <input
-                type="text"
-                value={formData.department}
-                onChange={(e) =>
-                  setFormData({ ...formData, department: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="เช่น IT"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                สถานที่
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="เช่น กรุงเทพ"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                เงินเดือน
-              </label>
-              <input
-                type="text"
-                value={formData.salary}
-                onChange={(e) =>
-                  setFormData({ ...formData, salary: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="เช่น 30,000 - 50,000 บาท"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ประเภทงาน
-              </label>
-              <select
-                value={formData.employmentType}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    employmentType: e.target.value,
-                  })
-                }
-                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                <option value="FULL_TIME">เต็มเวลา</option>
-                <option value="PART_TIME">พาร์ทไทม์</option>
-                <option value="CONTRACT">สัญญาจ้าง</option>
-                <option value="INTERNSHIP">ฝึกงาน</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              รายละเอียดงาน
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="อธิบายรายละเอียดงาน..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              คุณสมบัติผู้สมัคร
-            </label>
-            <textarea
-              value={formData.requirements}
-              onChange={(e) =>
-                setFormData({ ...formData, requirements: e.target.value })
-              }
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="ระบุคุณสมบัติที่ต้องการ..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              หน้าที่ความรับผิดชอบ
-            </label>
-            <textarea
-              value={formData.responsibilities}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  responsibilities: e.target.value,
-                })
-              }
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="ระบุหน้าที่ความรับผิดชอบ..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              สวัสดิการ
-            </label>
-            <textarea
-              value={formData.benefits}
-              onChange={(e) =>
-                setFormData({ ...formData, benefits: e.target.value })
-              }
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              placeholder="ระบุสวัสดิการ..."
-            />
-          </div>
+          <JobFormFields 
+            formData={formData} 
+            onFieldChange={(field, value) => {
+              setAll({ [field]: value } as any);
+            }}
+          />
 
           <div className="flex gap-3 pt-4">
             <button

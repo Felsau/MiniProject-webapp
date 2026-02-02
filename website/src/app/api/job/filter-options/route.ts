@@ -1,0 +1,42 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * GET filter options for job listing (departments and locations)
+ */
+export async function GET() {
+  try {
+    // Get unique departments
+    const jobs = await prisma.job.findMany({
+      where: { isActive: true },
+      distinct: ["department"],
+      select: { department: true, location: true },
+    });
+
+    const departments = Array.from(
+      new Set(jobs.map((j) => j.department).filter(Boolean))
+    ) as string[];
+
+    const locations = Array.from(
+      new Set(jobs.map((j) => j.location).filter(Boolean))
+    ) as string[];
+
+    const employmentTypes = [
+      { value: "FULL_TIME", label: "เต็มเวลา" },
+      { value: "PART_TIME", label: "พาร์ตไทม์" },
+      { value: "CONTRACT", label: "สัญญา" },
+      { value: "INTERNSHIP", label: "ฝึกงาน" },
+    ];
+
+    return NextResponse.json(
+      { departments, locations, employmentTypes },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error fetching filter options:", error);
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดในการดึงข้อมูล" },
+      { status: 500 }
+    );
+  }
+}
