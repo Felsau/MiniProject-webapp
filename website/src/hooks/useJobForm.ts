@@ -34,7 +34,8 @@ export function useJobForm(initialData?: Partial<JobFormData>) {
     initialData ? { ...initialFormData, ...initialData } : initialFormData
   );
 
-  const updateField = useCallback((field: keyof JobFormData, value: string) => {
+  // ✅ เปลี่ยนชื่อจาก updateField เป็น handleChange เพื่อให้ตรงกับ EditJobModal
+  const handleChange = useCallback((field: keyof JobFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
@@ -48,7 +49,7 @@ export function useJobForm(initialData?: Partial<JobFormData>) {
 
   return {
     formData,
-    updateField,
+    handleChange, // ✅ ส่งออกชื่อนี้
     resetForm,
     setAll,
   };
@@ -61,13 +62,17 @@ export function useJobApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ 1. เพิ่ม "PATCH" ใน Type definition
   const submitJob = useCallback(
-    async (formData: JobFormData, method: "POST" | "PUT" = "POST", jobId?: string) => {
+    async (formData: JobFormData, method: "POST" | "PUT" | "PATCH" = "POST", jobId?: string) => {
       setLoading(true);
       setError(null);
 
       try {
-        const url = method === "PUT" && jobId ? `/api/job/${jobId}` : "/api/job";
+        // ✅ 2. แก้ Logic URL: ถ้าเป็น PUT หรือ PATCH และมี ID ให้ยิงไปที่ path ที่มี ID
+        const isUpdate = (method === "PUT" || method === "PATCH") && jobId;
+        const url = isUpdate ? `/api/job/${jobId}` : "/api/job";
+
         const res = await fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
@@ -82,8 +87,9 @@ export function useJobApi() {
         return await res.json();
       } catch (err) {
         const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+        console.error("Submit Error:", err); // Log error ดูใน Console
         setError(message);
-        throw err;
+        throw err; // ✅ 3. Throw Error ออกไปเพื่อให้ Modal รู้ว่าพัง
       } finally {
         setLoading(false);
       }
@@ -91,21 +97,17 @@ export function useJobApi() {
     []
   );
 
+  // (ส่วน killJob/restoreJob ปล่อยไว้เหมือนเดิมเผื่อไฟล์อื่นใช้ครับ)
   const killJob = useCallback(async (jobId: string) => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch(`/api/job/${jobId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "kill" }),
       });
-
-      if (!res.ok) {
-        throw new Error("ไม่สามารถปิดประกาศงานได้");
-      }
-
+      if (!res.ok) throw new Error("ไม่สามารถปิดประกาศงานได้");
       return await res.json();
     } catch (err) {
       const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
@@ -119,18 +121,13 @@ export function useJobApi() {
   const restoreJob = useCallback(async (jobId: string) => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch(`/api/job/${jobId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "restore" }),
       });
-
-      if (!res.ok) {
-        throw new Error("ไม่สามารถเปิดประกาศงานได้");
-      }
-
+      if (!res.ok) throw new Error("ไม่สามารถเปิดประกาศงานได้");
       return await res.json();
     } catch (err) {
       const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";

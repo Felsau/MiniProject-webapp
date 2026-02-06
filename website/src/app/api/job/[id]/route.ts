@@ -3,9 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
+// ✅ Type สำหรับ Params (Next.js 15)
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+// ============================================
+// GET - ดึงข้อมูลงานรายตัว
+// ============================================
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params;
@@ -24,205 +32,99 @@ export async function GET(
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: "ไม่พบตำแหน่งงาน" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "ไม่พบตำแหน่งงาน" }, { status: 404 });
     }
 
     return NextResponse.json({ job }, { status: 200 });
   } catch (error) {
     console.error("Error fetching job:", error);
-    return NextResponse.json(
-      { error: "เกิดข้อผิดพลาดในการดึงข้อมูล" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-
-    if (!session) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบก่อน" },
-        { status: 401 }
-      );
-    }
-
-    const body = await req.json();
-    const {
-      title,
-      description,
-      department,
-      location,
-      salary,
-      employmentType,
-      requirements,
-      responsibilities,
-      benefits,
-    } = body;
-
-    // ตรวจสอบว่างานนี้เป็นของผู้ใช้ปัจจุบันหรือไม่
-    const job = await prisma.job.findUnique({
-      where: { id },
-    });
-
-    if (!job) {
-      return NextResponse.json(
-        { error: "ไม่พบตำแหน่งงาน" },
-        { status: 404 }
-      );
-    }
-
-    const updatedJob = await prisma.job.update({
-      where: { id },
-      data: {
-        title,
-        description: description || null,
-        department: department || null,
-        location: location || null,
-        salary: salary || null,
-        employmentType: employmentType || "FULL_TIME",
-        requirements: requirements || null,
-        responsibilities: responsibilities || null,
-        benefits: benefits || null,
-      },
-    });
-
-    return NextResponse.json(
-      { message: "แก้ไขงานสำเร็จ", job: updatedJob },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error updating job:", error);
-    return NextResponse.json(
-      { error: "เกิดข้อผิดพลาดในการแก้ไข" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
 
 // ============================================
-// Kill Section - Soft Delete Job Posting
+// PATCH - รวมพลัง: แก้ไขข้อมูล + ปิด/เปิดงาน
 // ============================================
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params; // ✅ Await ID ก่อนเสมอ
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบก่อน" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
-    const { action } = body;
+    
+    // ตรวจสอบว่าเป็นคำสั่ง Kill/Restore หรือไม่?
+    const isStatusAction = body.action === "kill" || body.action === "restore";
 
-    // Validate action
-    if (!action || !["kill", "restore"].includes(action)) {
-      return NextResponse.json(
-        { error: "Invalid action. Use 'kill' or 'restore'" },
-        { status: 400 }
-      );
+    // เตรียมข้อมูลที่จะอัปเดต (Update Data)
+    let updateData: any = {};
+
+    if (isStatusAction) {
+      // 👉 กรณี 1: สั่งปิด/เปิดงาน
+      updateData = {
+        isActive: body.action === "restore", // restore = true, kill = false
+        killedAt: body.action === "kill" ? new Date() : null,
+      };
+    } else {
+      // 👉 กรณี 2: แก้ไขข้อมูลทั่วไป (Edit Job)
+      updateData = {
+        title: body.title,
+        description: body.description,
+        department: body.department,
+        location: body.location,
+        salary: body.salary,
+        employmentType: body.employmentType,
+        requirements: body.requirements,
+        responsibilities: body.responsibilities,
+        benefits: body.benefits,
+      };
     }
 
-    const job = await prisma.job.findUnique({
-      where: { id: params.id },
-      include: { postedByUser: true },
-    });
-
-    if (!job) {
-      return NextResponse.json(
-        { error: "ไม่พบประกาศงาน" },
-        { status: 404 }
-      );
-    }
-
-    // Check authorization - only author, HR, or ADMIN can kill jobs
-    const user = await prisma.user.findUnique({
-      where: { username: session.user?.name as string },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "ไม่พบข้อมูลผู้ใช้" },
-        { status: 404 }
-      );
-    }
-
-    const isAuthor = job.postedBy === user.id;
-    const isAuthorized = isAuthor || user.role === "HR" || user.role === "ADMIN";
-
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { error: "คุณไม่มีสิทธิ์แก้ไขประกาศงานนี้" },
-        { status: 403 }
-      );
-    }
-
-    // Perform the action
+    // อัปเดตลง Database
     const updatedJob = await prisma.job.update({
-      where: { id: params.id },
-      data: {
-        isActive: action === "kill" ? false : true,
-        killedAt: action === "kill" ? new Date() : null,
-      },
+      where: { id },
+      data: updateData,
       include: { postedByUser: true },
     });
-
-    const message = action === "kill" 
-      ? "ปิดประกาศงานสำเร็จ" 
-      : "เปิดประกาศงานสำเร็จ";
 
     return NextResponse.json(
-      { message, job: updatedJob },
+      { 
+        message: isStatusAction ? "อัปเดตสถานะสำเร็จ" : "แก้ไขข้อมูลสำเร็จ", 
+        job: updatedJob 
+      },
       { status: 200 }
     );
+
   } catch (error) {
-    console.error("Error updating job status:", error);
-    return NextResponse.json(
-      { error: "เกิดข้อผิดพลาดในการเปลี่ยนสถานะ" },
-      { status: 500 }
-    );
+    console.error("Error updating job:", error);
+    return NextResponse.json({ error: "Update Failed" }, { status: 500 });
   }
 }
 
+// ============================================
+// DELETE - ลบงานถาวร
+// ============================================
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
 
-    if (!session) {
-      return NextResponse.json(
-        { error: "กรุณาเข้าสู่ระบบก่อน" },
-        { status: 401 }
-      );
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    await prisma.job.delete({
-      where: { id },
-    });
+    await prisma.job.delete({ where: { id } });
 
-    return NextResponse.json({ message: "ลบงานสำเร็จ" }, { status: 200 });
+    return NextResponse.json({ message: "Job deleted" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting job:", error);
-    return NextResponse.json(
-      { error: "เกิดข้อผิดพลาดในการลบ" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Delete Failed" }, { status: 500 });
   }
 }
-

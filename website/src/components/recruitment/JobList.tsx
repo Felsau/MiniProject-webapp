@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase } from "lucide-react";
-import EditJobModal from "./EditJobModal";
+import { Briefcase, Search, Filter, Eye, EyeOff } from "lucide-react"; // ✅ เพิ่ม icon
+import {EditJobModal} from "./EditJobModal";
 import { useRouter } from "next/navigation";
 import { useJobActions } from "@/hooks/useJobActions";
 import { JobCard } from "./JobCard";
+import { JobWithCount } from "@/types"; // ✅ แนะนำให้ใช้ Type กลาง (ถ้ามี) หรือใช้ Interface เดิมก็ได้
 
+// ถ้ายังไม่ได้สร้างไฟล์ types/index.ts ให้ใช้ Interface นี้แทนชั่วคราว
 interface Job {
   id: string;
   title: string;
@@ -25,18 +27,24 @@ interface Job {
     fullName: string | null;
     username: string;
   } | null;
+  _count?: { applications: number }; // รองรับ count
 }
 
 interface JobListProps {
-  jobs: Job[];
+  jobs: Job[]; // หรือ JobWithCount[]
   userRole?: string;
-  showInactive?: boolean;
 }
 
-export default function JobList({ jobs, userRole, showInactive = false }: JobListProps) {
+export function JobList({ jobs, userRole }: JobListProps) {
   const router = useRouter();
+
+  // --- ✅ 1. เพิ่ม State สำหรับค้นหาและกรองกลับมา ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showInactive, setShowInactive] = useState(false); // ควบคุมการเปิด/ปิดงานที่นี่เลย
+
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   const { loadingJobId, handleKillJob, handleRestoreJob, handleDeleteJob } = useJobActions();
 
   const handleEdit = (job: Job) => {
@@ -47,44 +55,92 @@ export default function JobList({ jobs, userRole, showInactive = false }: JobLis
   const handleJobAction = async (
     actionFn: (jobId: string) => Promise<boolean>,
     jobId: string
-  ) => {
+  ): Promise<boolean> => { // <--- 1. ระบุว่าจะคืนค่า boolean
     const success = await actionFn(jobId);
     if (success) {
       router.refresh();
     }
+    return success; // <--- 2. ต้องมีบรรทัดนี้! เพื่อส่งผลลัพธ์กลับไปให้ JobCard
   };
 
-  // Filter jobs based on showInactive prop
-  const filteredJobs = showInactive ? jobs : jobs.filter((job) => job.isActive);
+  // --- ✅ 2. ใส่ Logic กรองข้อมูลกลับเข้าไป ---
+  const filteredJobs = jobs.filter((job) => {
+    // กรอง 1: สถานะ Active/Inactive
+    if (!showInactive && !job.isActive) return false;
 
-  if (filteredJobs.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm p-10 text-center border border-gray-200 border-dashed">
-        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Briefcase className="text-gray-400" size={32} />
-        </div>
-        <p className="text-gray-500 text-lg font-medium">ยังไม่มีตำแหน่งงานในขณะนี้</p>
-        <p className="text-gray-400 text-sm mt-1">ลองเพิ่มประกาศงานใหม่ดูสิ</p>
-      </div>
-    );
-  }
+    // กรอง 2: คำค้นหา (Search)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return (
+        job.title.toLowerCase().includes(term) ||
+        job.department?.toLowerCase().includes(term) ||
+        job.location?.toLowerCase().includes(term)
+      );
+    }
+    return true;
+  });
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredJobs.map((job) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            userRole={userRole}
-            loadingJobId={loadingJobId}
-            onEdit={handleEdit}
-            onKill={(jobId) => handleJobAction(handleKillJob, jobId)}
-            onRestore={(jobId) => handleJobAction(handleRestoreJob, jobId)}
-            onDelete={(jobId) => handleJobAction(handleDeleteJob, jobId)}
-          />
-        ))}
+      {/* --- ✅ 3. เพิ่มส่วน Header (ช่องค้นหา + ปุ่ม) กลับมาไว้ตรงนี้ --- */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <Briefcase size={24} className="text-blue-600" />
+          รายการตำแหน่งงาน ({filteredJobs.length})
+        </h2>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          {/* ช่องค้นหา */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="ค้นหาตำแหน่ง, แผนก..."
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* ปุ่มแสดงงานที่ปิด */}
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${showInactive
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              }`}
+          >
+            {showInactive ? <Eye size={16} /> : <EyeOff size={16} />}
+            {showInactive ? "ซ่อนงานปิด" : "ดูงานที่ปิด"}
+          </button>
+        </div>
       </div>
+
+      {/* --- ส่วนแสดงรายการ (เหมือนเดิม) --- */}
+      {filteredJobs.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm p-10 text-center border border-gray-200 border-dashed">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="text-gray-400" size={32} />
+          </div>
+          <p className="text-gray-500 text-lg font-medium">ไม่พบข้อมูลตามเงื่อนไข</p>
+          {searchTerm && <p className="text-gray-400 text-sm mt-1">ลองเปลี่ยนคำค้นหาดูใหม่</p>}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredJobs.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job as any} // Cast as any ถ้า Type ยังไม่ตรงกันเป๊ะ
+              userRole={userRole}
+              loadingJobId={loadingJobId}
+              onEdit={handleEdit}
+              onKill={(jobId) => handleJobAction(handleKillJob, jobId)}
+              onRestore={(jobId) => handleJobAction(handleRestoreJob, jobId)}
+              onDelete={(jobId) => handleJobAction(handleDeleteJob, jobId)}
+            />
+          ))}
+        </div>
+      )}
 
       {selectedJob && (
         <EditJobModal
@@ -93,9 +149,12 @@ export default function JobList({ jobs, userRole, showInactive = false }: JobLis
             setIsEditModalOpen(false);
             setSelectedJob(null);
           }}
-          job={selectedJob}
+          job={selectedJob as any}
         />
       )}
     </>
   );
 }
+
+// ถ้าคุณใช้ default export ในไฟล์นี้ ให้คงบรรทัดนี้ไว้
+export default JobList;

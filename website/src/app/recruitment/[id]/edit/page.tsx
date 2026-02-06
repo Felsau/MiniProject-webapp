@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import Link from "next/link";
 
+// คุณอาจจะย้ายไปใช้ Shared Type จาก @/types/index.ts ที่เราสร้างไว้ก็ได้ครับ
+// แต่ถ้าจะประกาศ Local ไว้แบบนี้ก็ใช้งานได้เหมือนกันครับ
 interface Job {
   id: string;
   title: string;
@@ -77,8 +78,9 @@ export default function EditJobPage() {
     setLoading(true);
 
     try {
+      // ✅ แก้ไขตรงนี้: เปลี่ยนจาก "PUT" เป็น "PATCH" ให้ตรงกับไฟล์ API
       const res = await fetch(`/api/job/${jobId}`, {
-        method: "PUT",
+        method: "PATCH", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });

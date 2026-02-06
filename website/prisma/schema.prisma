@@ -16,23 +16,26 @@ datasource db {
 // ============================================
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String      @id @default(cuid())
   username  String   @unique
   password  String   // Hashed password
   role      String   @default("USER") // ADMIN, HR, USER
   
   // Personal Information
-  fullName  String?  // ชื่อ-นามสกุลจริง
-  email     String?  // อีเมลติดต่อ
-  phone     String?  // เบอร์โทร
-  position  String?  // ตำแหน่งงานปัจจุบัน
-  bio       String?  // แนะนำตัว
+  fullName  String?
+  email     String?
+  phone     String?
+  position  String?
+  bio       String?
   
   // Timestamps
   createdAt DateTime @default(now())
   
   // Relations
-  jobs      Job[]    // งานที่สร้าง
+  jobs         Job[]        // งานที่สร้าง
+  
+  // ✅ เพิ่มบรรทัดนี้ครับ: เพื่อรับความสัมพันธ์จากตาราง Application
+  applications Application[] 
 
   @@map("User")
 }
@@ -61,7 +64,32 @@ model Job {
 
   // Relations
   postedByUser User @relation(fields: [postedBy], references: [id], onDelete: Cascade)
-  postedBy     Int
+  postedBy     String
+
+  // ✅ ความสัมพันธ์กับใบสมัคร (มีอยู่แล้ว ถูกต้องครับ)
+  applications Application[]
 
   @@map("Job")
+}
+
+// ============================================
+// Application System (ระบบใบสมัคร)
+// ============================================
+
+model Application {
+  id        String   @id @default(cuid())
+  status    String   @default("PENDING") // สถานะ: PENDING, APPROVED, REJECTED
+  
+  // เชื่อมกับ Job
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  // เชื่อมกับ User (แก้เป็น String เพื่อความชัวร์ หรือเช็ค model User ของคุณ)
+  userId    String   
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  
+  // ป้องกันการสมัครซ้ำในงานเดิม
+  @@unique([jobId, userId])
 }

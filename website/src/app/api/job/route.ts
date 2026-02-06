@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
 
     // Determine if user is admin/hr
-    const isAdminOrHR = session?.user?.name 
+    const isAdminOrHR = session?.user?.name
       ? await getUserAuthStatus(session.user.name as string)
       : false;
 
@@ -25,11 +25,11 @@ export async function GET(req: Request) {
       department: searchParams.get("department") || undefined,
       location: searchParams.get("location") || undefined,
       employmentType: searchParams.get("employmentType") || undefined,
-      salaryMin: searchParams.get("salaryMin") 
-        ? parseInt(searchParams.get("salaryMin")!) 
+      salaryMin: searchParams.get("salaryMin")
+        ? parseInt(searchParams.get("salaryMin")!)
         : undefined,
-      salaryMax: searchParams.get("salaryMax") 
-        ? parseInt(searchParams.get("salaryMax")!) 
+      salaryMax: searchParams.get("salaryMax")
+        ? parseInt(searchParams.get("salaryMax")!)
         : undefined,
       isActive: searchParams.get("isActive") === "false" ? false : true,
     };
@@ -57,6 +57,11 @@ export async function GET(req: Request) {
           select: {
             fullName: true,
             username: true,
+          },
+        },
+        _count: {
+          select: {
+            applications: true,
           },
         },
       },

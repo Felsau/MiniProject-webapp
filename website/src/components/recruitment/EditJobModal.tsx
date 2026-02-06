@@ -25,13 +25,15 @@ interface EditJobModalProps {
   onClose: () => void;
 }
 
-export default function EditJobModal({
+export function EditJobModal({
   job,
   isOpen,
   onClose,
 }: EditJobModalProps) {
   const router = useRouter();
-  const { formData, setAll } = useJobForm({
+  
+  // Setup Hook
+  const { formData, setAll, handleChange } = useJobForm({
     title: job.title,
     description: job.description || "",
     department: job.department || "",
@@ -42,8 +44,10 @@ export default function EditJobModal({
     responsibilities: job.responsibilities || "",
     benefits: job.benefits || "",
   });
+
   const { loading, submitJob } = useJobApi();
 
+  // Sync data when job changes
   useEffect(() => {
     setAll({
       title: job.title,
@@ -56,17 +60,22 @@ export default function EditJobModal({
       responsibilities: job.responsibilities || "",
       benefits: job.benefits || "",
     });
-  }, [job, setAll]);
+  }, [job, setAll]); // ตัด setAll ออกจาก dependency ถ้า ESLint บ่น แต่ใส่ไว้ก็ไม่เป็นไร
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await submitJob(formData, "PUT", job.id);
-      onClose();
-      router.refresh();
-    } catch {
-      // Error is handled by the hook's state
+      // ✅ ใช้ PATCH ได้แล้ว (ไม่ต้องมี as any)
+      await submitJob(formData, "PATCH", job.id);
+      
+      // ถ้าผ่านบรรทัดบนมาได้ แปลว่าสำเร็จ
+      alert("บันทึกข้อมูลเรียบร้อยแล้ว"); // (Optional) แจ้งเตือนหน่อยก็ดี
+      onClose(); // ปิด Modal
+      router.refresh(); // รีเฟรชหน้า
+    } catch (error) {
+      // ถ้า Error มันจะเด้งมาตรงนี้
+      alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่");
     }
   };
 
@@ -86,17 +95,17 @@ export default function EditJobModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* ส่ง handleChange ไปให้ FormFields ใช้ */}
           <JobFormFields 
             formData={formData} 
-            onFieldChange={(field, value) => {
-              setAll({ [field]: value } as any);
-            }}
+            onFieldChange={(field, value) => handleChange(field as any, value)}
           />
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
               className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
               ยกเลิก
