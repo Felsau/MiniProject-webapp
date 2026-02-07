@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     if (!session?.user?.name) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { jobId } = body;
+    const { jobId, resumeUrl } = body;
 
     // 1. ตรวจสอบว่าส่ง jobId มาจริงไหม
     if (!jobId) return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
@@ -71,6 +71,7 @@ export async function POST(req: Request) {
         jobId: jobId,
         userId: user.id,
         status: "PENDING",
+        resumeUrl: resumeUrl || null,
       },
       include: {
         job: {

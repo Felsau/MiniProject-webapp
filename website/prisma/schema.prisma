@@ -80,6 +80,9 @@ model Application {
   id        String   @id @default(cuid())
   status    String   @default("PENDING") // สถานะ: PENDING, APPROVED, REJECTED
   
+  // Resume/CV Upload
+  resumeUrl String?  // Path to uploaded resume file (PDF)
+
   // เชื่อมกับ Job
   jobId     String
   job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)

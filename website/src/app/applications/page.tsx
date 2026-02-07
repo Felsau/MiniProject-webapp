@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { FileText, Calendar, Clock, CheckCircle, XCircle, MapPin, Briefcase, Loader2, User, ChevronDown } from "lucide-react";
+import { FileText, Calendar, Clock, CheckCircle, XCircle, MapPin, Briefcase, Loader2, User, ChevronDown, Download } from "lucide-react";
 import Link from "next/link";
 
 interface ApplicationJob {
@@ -23,6 +23,7 @@ interface Application {
   id: string;
   status: string;
   createdAt: string;
+  resumeUrl?: string | null;
   job: ApplicationJob;
   user?: ApplicationUser;
 }
@@ -180,6 +181,20 @@ export default function ApplicationsPage() {
                             {app.user.email && <span className="text-gray-400">• {app.user.email}</span>}
                             {app.user.phone && <span className="text-gray-400">• {app.user.phone}</span>}
                           </div>
+                        )}
+
+                        {/* Resume Download Link */}
+                        {app.resumeUrl && (
+                          <a
+                            href={app.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="inline-flex items-center gap-1.5 mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+                          >
+                            <Download size={14} />
+                            ดาวน์โหลด Resume
+                          </a>
                         )}
                       </div>
                     </div>
