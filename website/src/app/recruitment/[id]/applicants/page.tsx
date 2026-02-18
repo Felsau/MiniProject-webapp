@@ -2,13 +2,13 @@
 
 import { useEffect, useState, use } from "react";
 import {
-    User, Mail, Calendar, ArrowLeft, CheckCircle, XCircle, Loader2,
-    Eye, // ✅ นำ Eye กลับมา
-    ChevronDown
-} from "lucide-react";
+    User, Mail, Calendar, ArrowLeft, Loader2,
+    Eye,
+    ChevronDown,
+    FileText
+} from "lucide-react"; // ❌ ลบ CheckCircle, XCircle ออกเพราะไม่ได้ใช้แล้ว
 import Link from "next/link";
 
-// กำหนดสีของสถานะ
 const statusColors: Record<string, string> = {
     PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
     INTERVIEW: "bg-blue-100 text-blue-700 border-blue-200",
@@ -155,7 +155,7 @@ export default function ApplicantsPage({ params }: { params: Promise<{ id: strin
                                                     <Loader2 size={18} className="animate-spin text-gray-400" />
                                                 ) : (
                                                     <>
-                                                        {/* ✅ ปุ่มดูโปรไฟล์เป็นรูปตา (Eye) */}
+                                                        {/* ปุ่มดูโปรไฟล์ (Eye) */}
                                                         <Link
                                                             href={`/profile/${app.user.id}`}
                                                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
@@ -164,29 +164,28 @@ export default function ApplicantsPage({ params }: { params: Promise<{ id: strin
                                                             <Eye size={18} />
                                                         </Link>
 
-                                                        <div className="w-px h-4 bg-gray-200 mx-1"></div>
-
-                                                        {/* Quick Actions (แสดงเฉพาะตอน Pending) */}
-                                                        {app.status === 'PENDING' && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => handleStatusChange(app.id, 'INTERVIEW')}
-                                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                                                                    title="เรียกสัมภาษณ์"
-                                                                >
-                                                                    <CheckCircle size={18} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleStatusChange(app.id, 'REJECTED')}
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded transition"
-                                                                    title="ปฏิเสธ"
-                                                                >
-                                                                    <XCircle size={18} />
-                                                                </button>
-                                                            </>
+                                                        {/* ปุ่มดูเรซูเม่ (FileText) */}
+                                                        {app.resumeUrl ? (
+                                                            <Link
+                                                                href={app.resumeUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                                                title="เปิดไฟล์เรซูเม่"
+                                                            >
+                                                                <FileText size={18} />
+                                                            </Link>
+                                                        ) : (
+                                                            <div className="p-1.5 text-gray-200 cursor-not-allowed" title="ไม่แนบเรซูเม่">
+                                                                <FileText size={18} />
+                                                            </div>
                                                         )}
 
-                                                        {/* ปุ่ม Dropdown แบบมีข้อความ "เปลี่ยน" */}
+                                                        <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+                                                        {/* ✅ เอา Quick Actions (Check/Cross) ออกไปแล้ว */}
+
+                                                        {/* Dropdown Menu */}
                                                         <div className="relative">
                                                             <button
                                                                 onClick={(e) => {
@@ -198,7 +197,6 @@ export default function ApplicantsPage({ params }: { params: Promise<{ id: strin
                                                                         : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
                                                                     }`}
                                                             >
-
                                                                 <ChevronDown size={14} className={`transition-transform duration-200 ${openMenuId === app.id ? 'rotate-180' : ''}`} />
                                                             </button>
 
