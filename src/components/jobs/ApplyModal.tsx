@@ -63,7 +63,8 @@ export function ApplyModal({ jobId, jobTitle, onClose }: ApplyModalProps) {
           throw new Error(uploadData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
         }
 
-        resumeUrl = uploadData.url;
+  // เลือก URL ที่เปิดได้จริง
+  resumeUrl = uploadData.subdomainUrl || uploadData.cdnUrl || uploadData.url;
       }
 
       const res = await fetch("/api/application", {
