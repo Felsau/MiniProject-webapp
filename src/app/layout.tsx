@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ระบบจัดหางานภายในองค์กร | Internal Job Portal",
+  title: "ระบบจัดหางานภายในองค์กร",
   description: "ระบบจัดการและสรรหาบุคลากรภายในองค์กร - Internal Recruitment Management System",
 };
 

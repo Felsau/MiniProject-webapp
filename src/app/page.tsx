@@ -53,7 +53,7 @@ export default function Home() {
             <Building2 size={40} className="text-blue-600" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            Internal Job Portal
+            ระบบจัดหางานภายในองค์กร
           </h1>
           <p className="text-blue-100 text-lg">ระบบจัดหางานภายในองค์กร</p>
         </div>
@@ -148,7 +148,7 @@ export default function Home() {
         </div>
 
         <p className="text-center text-white/70 text-sm mt-6">
-          © 2026 Internal Job Portal. All rights reserved.
+          © 2026 ระบบจัดหางานภายในองค์กร. สงวนลิขสิทธิ์.
         </p>
       </div>
     </div>

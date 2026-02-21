@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
-import path from "path";
-import fs from "fs/promises";
+import { uploadPdfToGCS } from "@/lib/services/gcsService";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "resumes");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["application/pdf"];
 
@@ -44,18 +42,13 @@ export async function POST(req: Request) {
     const timestamp = Date.now();
     const sanitizedUsername = session.user.name.replace(/[^a-zA-Z0-9]/g, "_");
     const fileName = `resume_${sanitizedUsername}_${timestamp}.pdf`;
-
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filePath = path.join(UPLOAD_DIR, fileName);
-    await fs.writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/resumes/${fileName}`;
-    console.log("[UPLOAD] Success:", fileUrl);
+    // อัปโหลดไปยัง Google Cloud Storage
+    const gcsUrl = await uploadPdfToGCS(buffer, fileName, file.type);
+    console.log("[UPLOAD] Success:", gcsUrl);
     return NextResponse.json(
-      { success: true, url: fileUrl, fileName },
+      { success: true, url: gcsUrl, fileName },
       { status: 201 }
     );
   } catch (error) {
