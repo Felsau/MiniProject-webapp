@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
-import { uploadPdfToGoogleDrive } from "@/lib/services/gdriveService";
+import { uploadToUploadcare } from "@/lib/services/uploadcareService";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["application/pdf"];
@@ -45,10 +45,12 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     // อัปโหลดไปยัง Google Drive
-    const driveUrl = await uploadPdfToGoogleDrive(buffer, fileName, file.type);
-    console.log("[UPLOAD] Success:", driveUrl);
+    // สร้างไฟล์ใหม่จาก buffer เพื่อส่งไป Uploadcare
+    const uploadcareFile = new File([buffer], fileName, { type: file.type });
+    const uploadcareUrl = await uploadToUploadcare(uploadcareFile);
+    console.log("[UPLOAD] Success:", uploadcareUrl);
     return NextResponse.json(
-      { success: true, url: driveUrl, fileName },
+      { success: true, url: uploadcareUrl, fileName },
       { status: 201 }
     );
   } catch (error) {
