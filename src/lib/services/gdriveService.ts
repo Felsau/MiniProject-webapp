@@ -26,9 +26,12 @@ export async function uploadPdfToGoogleDrive(fileBuffer: Buffer, fileName: strin
     fields: 'id',
   });
   const fileId = res.data.id;
+  if (!fileId) {
+    throw new Error('Google Drive fileId is null or undefined');
+  }
   // สร้างลิงก์ดาวน์โหลดแบบสาธารณะ
   await drive.permissions.create({
-    fileId,
+    fileId: fileId,
     requestBody: {
       role: 'reader',
       type: 'anyone',
