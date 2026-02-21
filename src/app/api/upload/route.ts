@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
-import { uploadPdfToGCS } from "@/lib/services/gcsService";
+import { uploadPdfToGoogleDrive } from "@/lib/services/gdriveService";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["application/pdf"];
@@ -44,11 +44,11 @@ export async function POST(req: Request) {
     const fileName = `resume_${sanitizedUsername}_${timestamp}.pdf`;
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    // อัปโหลดไปยัง Google Cloud Storage
-    const gcsUrl = await uploadPdfToGCS(buffer, fileName, file.type);
-    console.log("[UPLOAD] Success:", gcsUrl);
+    // อัปโหลดไปยัง Google Drive
+    const driveUrl = await uploadPdfToGoogleDrive(buffer, fileName, file.type);
+    console.log("[UPLOAD] Success:", driveUrl);
     return NextResponse.json(
-      { success: true, url: gcsUrl, fileName },
+      { success: true, url: driveUrl, fileName },
       { status: 201 }
     );
   } catch (error) {
